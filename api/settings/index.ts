@@ -5,9 +5,9 @@ import {
   parseJsonBody,
   sendError,
   sendJson
-} from '../_lib/http';
-import { getTheme, setTheme } from '../_lib/db';
-import { requireAuth } from '../_lib/auth';
+} from '../_lib/http.js';
+import { getTheme, setTheme } from '../_lib/db.js';
+import { requireAuth } from '../_lib/auth.js';
 
 type ThemeBody = {
   theme?: string;

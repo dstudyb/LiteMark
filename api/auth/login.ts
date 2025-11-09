@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { issueToken, validateAdminCredentials } from '../_lib/auth';
-import { applyCors, handleOptions, parseJsonBody, sendError, sendJson } from '../_lib/http';
+import { issueToken, validateAdminCredentials } from '../_lib/auth.js';
+import { applyCors, handleOptions, parseJsonBody, sendError, sendJson } from '../_lib/http.js';
 
 type LoginBody = {
   username?: string;
