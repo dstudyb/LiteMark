@@ -265,6 +265,22 @@ const groupedBookmarks = computed(() => {
     }));
 });
 
+const categorySuggestions = computed(() => {
+  const set = new Set<string>();
+  bookmarks.value.forEach((bookmark) => {
+    if (bookmark.visible === false && !isAuthenticated.value) {
+      return;
+    }
+    const normalized = normalizeCategory(bookmark);
+    if (normalized) {
+      set.add(normalized);
+    }
+  });
+  const list = Array.from(set);
+  list.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+  return list;
+});
+
 const categoryFiltered = computed(() => {
   if (currentCategory.value === 'all') {
     return visibilityFiltered.value;
@@ -683,7 +699,15 @@ function openBookmark(bookmark: Bookmark) {
             </label>
             <label class="field">
               <span>分类</span>
-              <input v-model="form.category" type="text" placeholder="例如：开发工具" />
+              <input
+                v-model="form.category"
+                type="text"
+                placeholder="例如：开发工具"
+                list="home-category-options"
+              />
+              <datalist id="home-category-options">
+                <option v-for="name in categorySuggestions" :key="name" :value="name" />
+              </datalist>
             </label>
             <label class="field field--description">
               <span>描述</span>

@@ -122,6 +122,19 @@ const recentBookmarks = computed(() => {
     .slice(0, 5);
 });
 
+const categorySuggestions = computed(() => {
+  const set = new Set<string>();
+  bookmarks.value.forEach((bookmark) => {
+    const name = normalizeCategory(bookmark);
+    if (name) {
+      set.add(name);
+    }
+  });
+  const list = Array.from(set);
+  list.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+  return list;
+});
+
 watch(authToken, (token) => {
   if (typeof window === 'undefined') return;
   if (token) {
@@ -137,6 +150,13 @@ watch(currentUser, (name) => {
     window.localStorage.setItem('bookmark_username', name);
   } else {
     window.localStorage.removeItem('bookmark_username');
+  }
+});
+
+watch(isAuthenticated, (authed) => {
+  if (!authed) {
+    showEditor.value = false;
+    showLoginModal.value = true;
   }
 });
 
@@ -524,6 +544,10 @@ function goHome() {
 }
 
 onMounted(() => {
+  if (!isAuthenticated.value) {
+    showLoginModal.value = true;
+    return;
+  }
   Promise.all([loadBookmarks(), loadSettings()]).catch((err) => {
     console.error(err);
   });
@@ -735,7 +759,10 @@ onMounted(() => {
           </label>
           <label class="field">
             <span>分类</span>
-            <input v-model="editorForm.category" type="text" />
+            <input v-model="editorForm.category" type="text" list="admin-category-options" />
+            <datalist id="admin-category-options">
+              <option v-for="name in categorySuggestions" :key="name" :value="name" />
+            </datalist>
           </label>
           <label class="field">
             <span>描述</span>
