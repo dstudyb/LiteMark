@@ -82,6 +82,17 @@ const orderSaving = ref(false);
 const pendingOrder = ref<string[] | null>(null);
 const orderMessage = ref('');
 
+function toUserMessage(err: unknown, fallback: string) {
+  if (err instanceof Error) {
+    const message = err.message || '';
+    if (/fetch/i.test(message) || /network/i.test(message) || /storage/i.test(message)) {
+      return '数据存储服务暂时不可用，请稍后重试。';
+    }
+    return message;
+  }
+  return fallback;
+}
+
 const containerRefs = new Map<string, HTMLElement>();
 const sortableInstances = new Map<string, Sortable>();
 
@@ -120,6 +131,9 @@ async function persistOrder(orderIds: string[]) {
     bookmarks.value = updated;
     pendingOrder.value = null;
     orderMessage.value = '排序已保存';
+  } catch (err) {
+    error.value = toUserMessage(err, '保存排序失败');
+    orderMessage.value = '';
   } finally {
     orderSaving.value = false;
   }
@@ -435,7 +449,7 @@ async function loadBookmarks() {
     const data = (await response.json()) as Bookmark[];
     bookmarks.value = data;
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '未知错误';
+    error.value = toUserMessage(err, '加载书签失败');
   } finally {
     loading.value = false;
   }
@@ -535,11 +549,7 @@ async function saveBookmark() {
     await loadBookmarks();
     resetForm();
   } catch (err) {
-    if (err instanceof Error) {
-      error.value = err.message;
-    } else {
-      error.value = '保存失败';
-    }
+    error.value = toUserMessage(err, '保存失败');
   } finally {
     saving.value = false;
   }
@@ -572,11 +582,7 @@ async function removeBookmark(id: string) {
     }
     await loadBookmarks();
   } catch (err) {
-    if (err instanceof Error) {
-      error.value = err.message;
-    } else {
-      error.value = '删除失败';
-    }
+    error.value = toUserMessage(err, '删除失败');
   }
 }
 
@@ -715,7 +721,7 @@ async function toggleVisibility(bookmark: Bookmark) {
     }
     await loadBookmarks();
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '更新显示状态失败';
+    error.value = toUserMessage(err, '更新显示状态失败');
   }
 }
 
