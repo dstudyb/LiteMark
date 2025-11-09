@@ -33,6 +33,7 @@ const DEFAULT_SETTINGS: SettingsData = {
 };
 
 const SETTINGS_CACHE_TTL = Number(process.env.SETTINGS_CACHE_TTL_MS ?? '60000');
+const BOOKMARKS_CACHE_TTL = Number(process.env.BOOKMARKS_CACHE_TTL_MS ?? '60000');
 
 type SettingsCache = {
   value: SettingsData;
@@ -41,6 +42,13 @@ type SettingsCache = {
 
 let settingsCache: SettingsCache | null = null;
 let settingsRefreshTimer: NodeJS.Timeout | null = null;
+
+type BookmarksCache = {
+  value: BookmarkRecord[];
+  expiresAt: number;
+};
+
+let bookmarksCache: BookmarksCache | null = null;
 
 function refreshSettingsCache() {
   readJson('settings', DEFAULT_SETTINGS)
@@ -86,11 +94,25 @@ function ensureSettingsRefreshTimer() {
 }
 
 async function loadBookmarks(): Promise<BookmarkRecord[]> {
-  return readJson('bookmarks', [] as BookmarkRecord[]);
+  const now = Date.now();
+  if (bookmarksCache && bookmarksCache.expiresAt > now) {
+    return [...bookmarksCache.value];
+  }
+  const data = await readJson('bookmarks', [] as BookmarkRecord[]);
+  bookmarksCache = {
+    value: data,
+    expiresAt: BOOKMARKS_CACHE_TTL > 0 ? now + BOOKMARKS_CACHE_TTL : now
+  };
+  return [...data];
 }
 
 async function saveBookmarks(bookmarks: BookmarkRecord[]) {
   await writeJson('bookmarks', bookmarks);
+  const now = Date.now();
+  bookmarksCache = {
+    value: [...bookmarks],
+    expiresAt: BOOKMARKS_CACHE_TTL > 0 ? now + BOOKMARKS_CACHE_TTL : now
+  };
 }
 
 async function loadSettings(): Promise<SettingsData> {
