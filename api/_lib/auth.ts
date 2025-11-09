@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import jwt from 'jsonwebtoken';
-import { sendError } from './http';
+import { sendError } from './http.js';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'bookmark-secret';
 
