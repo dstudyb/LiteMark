@@ -13,11 +13,15 @@ LiteMark 是一款基于 **Vue 3 + Vite** 的个人书签管理应用，提供�
 
 ---
 
+##  目前问题
+- 数据导入导出可能有一些问题
+
+
 ## 后续更新计划
 
 - 增加更多部署方案
 - 优化备份导入功能
-
+- 优化数据导入导出功能
 
 
 ## 部署到 Vercel
@@ -30,6 +34,11 @@ LiteMark 是一款基于 **Vue 3 + Vite** 的个人书签管理应用，提供�
 > 若部署后 `/api` 返回静态页面或 404，多半是 `vercel.json` 不存在或命名错误（确保文件名为 `vercel.json`）。
 
 ---
+
+##  浏览器插件
+
+https://github.com/topqaz/LiteMark-extension-browser
+
 
 ## 环境变量清单
 
