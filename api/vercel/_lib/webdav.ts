@@ -30,10 +30,11 @@ async function ensureDirectoryExists(
   
   const dirUrl = `${baseUrl}${directory.startsWith('/') ? directory : '/' + directory}`;
   
+  let timeoutId: NodeJS.Timeout | null = null;
   try {
     // 尝试创建目录（如果不存在）
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+    timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
     
     const response = await fetch(dirUrl, {
       method: 'MKCOL',
@@ -44,7 +45,10 @@ async function ensureDirectoryExists(
       signal: controller.signal
     });
     
-    clearTimeout(timeoutId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
     
     // 201 (Created) 表示成功创建，405 (Method Not Allowed) 表示已存在，都是正常的
     if (response.status !== 201 && response.status !== 405 && response.status !== 409) {
@@ -54,9 +58,14 @@ async function ensureDirectoryExists(
         console.warn(`创建目录可能失败 (${response.status}): ${dirUrl}`);
       }
     }
-  } catch (error) {
+  } catch (error: any) {
+    // 清理 timeout
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
     // 忽略目录创建错误，继续尝试上传
-    console.warn('创建目录时出错（可能已存在）:', error);
+    console.warn('创建目录时出错（可能已存在）:', error.message || error);
   }
 }
 
@@ -72,9 +81,10 @@ async function uploadWithRetry(
   let lastError: Error | null = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    let timeoutId: NodeJS.Timeout | null = null;
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+      timeoutId = setTimeout(() => controller.abort(), 60000); // 60秒超时（增加超时时间）
       
       const response = await fetch(fullUrl, {
         method: 'PUT',
@@ -88,24 +98,48 @@ async function uploadWithRetry(
         signal: controller.signal
       });
       
-      clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
       return response;
     } catch (error: any) {
+      // 清理 timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      
       lastError = error;
       
-      // 如果是连接错误且还有重试机会，等待后重试
-      if (attempt < maxRetries && (
-        error.code === 'UND_ERR_SOCKET' ||
-        error.message?.includes('fetch failed') ||
-        error.message?.includes('other side closed')
-      )) {
-        const waitTime = attempt * 1000; // 递增等待时间：1s, 2s, 3s
-        console.warn(`上传失败，${waitTime}ms 后重试 (${attempt}/${maxRetries}):`, error.message);
+      // 检查是否是超时错误（AbortError）
+      const isAbortError = error.name === 'AbortError' || 
+                          error.message?.includes('aborted') ||
+                          error.message?.includes('AbortError');
+      
+      // 检查是否是网络连接错误
+      const isNetworkError = error.code === 'UND_ERR_SOCKET' ||
+                            error.message?.includes('fetch failed') ||
+                            error.message?.includes('other side closed') ||
+                            error.message?.includes('ECONNREFUSED') ||
+                            error.message?.includes('ETIMEDOUT') ||
+                            error.message?.includes('ENOTFOUND');
+      
+      // 如果是超时或网络错误且还有重试机会，等待后重试
+      if (attempt < maxRetries && (isAbortError || isNetworkError)) {
+        const waitTime = attempt * 2000; // 递增等待时间：2s, 4s, 6s
+        const errorType = isAbortError ? '超时' : '网络连接';
+        console.warn(`上传失败（${errorType}），${waitTime}ms 后重试 (${attempt}/${maxRetries}):`, error.message || error.name);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }
       
-      // 如果不是连接错误或没有重试机会了，直接抛出
+      // 如果是最后一次尝试且是超时错误，提供更友好的错误消息
+      if (attempt === maxRetries && isAbortError) {
+        throw new Error(`上传超时：在 ${maxRetries} 次尝试后仍无法完成上传，请检查网络连接或 WebDAV 服务器状态`);
+      }
+      
+      // 如果不是可重试的错误或没有重试机会了，直接抛出
       throw error;
     }
   }
@@ -155,10 +189,11 @@ export async function testWebDAVConnection(config: WebDAVConfig): Promise<boolea
     // 尝试执行 PROPFIND 请求来测试连接
     const auth = Buffer.from(`${username}:${password}`).toString('base64');
     
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
-    
+    let timeoutId: NodeJS.Timeout | null = null;
     try {
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
+      
       const response = await fetch(baseUrl, {
         method: 'PROPFIND',
         headers: {
@@ -169,12 +204,23 @@ export async function testWebDAVConnection(config: WebDAVConfig): Promise<boolea
         signal: controller.signal
       });
       
-      clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
       
       // 200, 207 (Multi-Status) 或 404 都表示连接成功
       return response.status === 200 || response.status === 207 || response.status === 404;
     } catch (fetchError: any) {
-      clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      
+      // 如果是超时错误，提供更详细的日志
+      if (fetchError.name === 'AbortError' || fetchError.message?.includes('aborted')) {
+        console.error('WebDAV 连接测试超时:', baseUrl);
+      }
       throw fetchError;
     }
   } catch (error: any) {

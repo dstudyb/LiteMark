@@ -591,16 +591,34 @@ async function testWebDAVConnection() {
     return;
   }
 
-  if (!webdavConfig.value.url || !webdavConfig.value.username || !webdavConfig.value.password) {
-    webdavError.value = '请先填写 WebDAV 配置信息';
-    return;
-  }
-
   webdavTesting.value = true;
   webdavMessage.value = '';
   webdavError.value = '';
 
   try {
+    // 如果密码为空，但 URL 和用户名已填写，尝试使用已保存的配置进行测试
+    if (!webdavConfig.value.password && webdavConfig.value.url && webdavConfig.value.username) {
+      const response = await requestWithAuth(`${apiBase}/api/backup/webdav?test=true`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || '连接测试失败');
+      }
+
+      webdavMessage.value = 'WebDAV 连接测试成功';
+      ElMessage.success('WebDAV 连接测试成功');
+      return;
+    }
+
+    // 如果密码已填写，使用当前配置进行测试（需要保存配置）
+    if (!webdavConfig.value.url || !webdavConfig.value.username || !webdavConfig.value.password) {
+      webdavError.value = '请先填写完整的 WebDAV 配置信息';
+      ElMessage.warning('请先填写完整的 WebDAV 配置信息');
+      return;
+    }
+
     // 先保存配置以测试连接
     const response = await requestWithAuth(`${apiBase}/api/backup/webdav`, {
       method: 'PUT',

@@ -57,10 +57,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  // GET: 获取 WebDAV 配置
+  // GET: 获取 WebDAV 配置或测试连接
   if (req.method === 'GET') {
     try {
       const config = await getStorageConfig();
+      
+      // 如果查询参数中有 test=true，使用已保存的配置进行测试
+      if (req.query.test === 'true') {
+        if (!config || config.provider !== 'webdav') {
+          sendError(res, 400, '请先配置 WebDAV');
+          return;
+        }
+
+        const webdavConfig = config as any as WebDAVConfig;
+        if (!webdavConfig.url || !webdavConfig.username || !webdavConfig.password) {
+          sendError(res, 400, 'WebDAV 配置不完整');
+          return;
+        }
+
+        const isValid = await testWebDAVConnection(webdavConfig);
+        if (isValid) {
+          sendJson(res, 200, { success: true, message: 'WebDAV 连接测试成功' });
+        } else {
+          sendError(res, 400, 'WebDAV 连接测试失败，请检查配置');
+        }
+        return;
+      }
+
+      // 正常获取配置
       if (config && config.provider === 'webdav') {
         // 不返回密码
         const { password, ...safeConfig } = config as any;
@@ -70,7 +94,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     } catch (error) {
       console.error('获取 WebDAV 配置失败', error);
-      sendError(res, 500, '获取 WebDAV 配置失败');
+      const message = error instanceof Error ? error.message : '获取 WebDAV 配置失败';
+      sendError(res, 500, message);
     }
     return;
   }
