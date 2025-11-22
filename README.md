@@ -84,14 +84,14 @@ LiteMark 支持将数据定时备份到 WebDAV 服务器，确保数据安全。
       - 如果CRON_SECRET 请求时须在请求头添加CRON_SECRET
 3. **配置 Vercel Cron Job**  （默认每天凌晨2点，如需自定义备份频率可以更改）
    默认使用的UTC +0时间  注意转换
-   "schedule": "0 10 * * *"  代表的上海时间 每天2:00进行一次备份
+   "schedule": "0 18 * * *"  代表的上海时间 每天2:00进行一次备份
    在项目根目录的 `vercel.json` 中添加 cron 配置：
 
    ```json
    {
      "crons": [{
        "path": "/api/cron/backup",
-       "schedule": "0 10 * * *"
+       "schedule": "0 18 * * *"
      }]
    }
    ```
