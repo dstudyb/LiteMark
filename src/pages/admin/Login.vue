@@ -1,84 +1,7 @@
-<template>
-  <div class="login-page">
-    <div class="login-background">
-      <div class="background-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-      </div>
-    </div>
-    <div class="login-container">
-      <el-card class="login-card" shadow="always">
-        <div class="login-header">
-          <div class="logo-section">
-            <img src="/LiteMark.png" alt="LiteMark Logo" class="logo-img" />
-            <h1 class="logo-title">LiteMark</h1>
-            <p class="logo-subtitle">后台管理系统</p>
-          </div>
-        </div>
-        <el-form :model="loginState" @submit.prevent="login" class="login-form">
-          <el-form-item>
-            <el-input
-              v-model="loginState.username"
-              placeholder="请输入用户名"
-              size="large"
-              :prefix-icon="User"
-              clearable
-            />
-          </el-form-item>
-          <el-form-item>
-            <el-input
-              v-model="loginState.password"
-              type="password"
-              placeholder="请输入密码"
-              size="large"
-              :prefix-icon="LockIcon"
-              show-password
-              clearable
-              @keyup.enter="login"
-            />
-          </el-form-item>
-          <el-alert
-            v-if="loginState.error"
-            :title="loginState.error"
-            type="error"
-            :closable="false"
-            show-icon
-            class="error-alert"
-          />
-          <el-form-item>
-            <el-button
-              type="primary"
-              :loading="loginState.loading"
-              @click="login"
-              size="large"
-              class="login-button"
-            >
-              <el-icon v-if="!loginState.loading"><ArrowRight /></el-icon>
-              {{ loginState.loading ? '登录中...' : '登录' }}
-            </el-button>
-          </el-form-item>
-        </el-form>
-        <div class="login-footer">
-          <el-divider>
-            <span class="divider-text">提示信息</span>
-          </el-divider>
-          <p class="footer-tip">
-            <el-icon><InfoFilled /></el-icon>
-            默认账号：<strong>admin</strong> / <strong>admin123</strong>
-          </p>
-          <p class="footer-note">可在「账号管理」中修改管理员账号</p>
-        </div>
-      </el-card>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { User, Lock as LockIcon, Right, InfoFilled } from '@element-plus/icons-vue';
 
 const router = useRouter();
 
@@ -88,176 +11,300 @@ const apiBaseRaw =
     : '') ?? '';
 const apiBase = apiBaseRaw.replace(/\/$/, '');
 
-const loginState = reactive({
+const form = reactive({
   username: '',
-  password: '',
-  loading: false,
-  error: ''
+  password: ''
 });
 
-async function login() {
-  loginState.loading = true;
-  loginState.error = '';
-  try {
-    const response = await fetch(`${apiBase}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        username: loginState.username.trim(),
-        password: loginState.password
-      })
-    });
-    if (!response.ok) {
-      const message = await response.text();
-      throw new Error(message || '登录失败');
-    }
-    const result = (await response.json()) as { token: string; username: string };
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('bookmark_token', result.token);
-      window.localStorage.setItem('bookmark_username', result.username);
-    }
-    ElMessage.success('登录成功');
+const rules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度至少为 6 位', trigger: 'blur' }
+  ]
+};
+
+const formRef = ref();
+const loading = ref(false);
+
+// 检查是否已登录
+onMounted(() => {
+  const token = localStorage.getItem('bookmark_token');
+  if (token) {
     router.push('/admin');
-  } catch (err) {
-    loginState.error = err instanceof Error ? err.message : '登录失败';
-  } finally {
-    loginState.loading = false;
   }
+});
+
+// 处理登录
+async function handleLogin() {
+  if (!formRef.value) return;
+
+  // 表单验证
+  await formRef.value.validate(async (valid: boolean) => {
+    if (!valid) {
+      return;
+    }
+
+    loading.value = true;
+
+    try {
+      const response = await fetch(`${apiBase}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: form.username.trim(),
+          password: form.password
+        })
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || '登录失败');
+      }
+
+      const result = (await response.json()) as { token: string; username: string };
+      
+      // 保存 token 和用户名
+      localStorage.setItem('bookmark_token', result.token);
+      localStorage.setItem('bookmark_username', result.username);
+      
+      ElMessage.success('登录成功');
+      
+      // 跳转到管理后台
+      router.push('/admin');
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : '登录失败，请检查用户名和密码';
+      ElMessage.error(errorMsg);
+    } finally {
+      loading.value = false;
+    }
+  });
 }
 </script>
 
+<template>
+  <div class="login-page">
+    <div class="login-container">
+      <el-card class="login-card" shadow="hover">
+        <template #header>
+          <div class="login-header">
+            <img src="/LiteMark64.png" alt="LiteMark Logo" class="logo" />
+            <h1 class="title">LiteMark</h1>
+            <p class="subtitle">轻量书签管理系统</p>
+          </div>
+        </template>
+
+        <p class="intro">
+          轻量、快速、跨设备同步的书签管理系统。<br />
+          登录后即可同步并管理你的专属云端书签。
+        </p>
+
+        <el-form
+          ref="formRef"
+          :model="form"
+          :rules="rules"
+          label-width="0"
+          class="login-form"
+          @submit.prevent="handleLogin"
+        >
+          <el-form-item prop="username">
+            <el-input
+              v-model="form.username"
+              placeholder="请输入用户名"
+              size="large"
+              :disabled="loading"
+              clearable
+            >
+              <template #prefix>
+                <el-icon><User /></el-icon>
+              </template>
+            </el-input>
+          </el-form-item>
+
+          <el-form-item prop="password">
+            <el-input
+              v-model="form.password"
+              type="password"
+              placeholder="请输入密码"
+              size="large"
+              :disabled="loading"
+              show-password
+              clearable
+              @keyup.enter="handleLogin"
+            >
+              <template #prefix>
+                <el-icon><Lock /></el-icon>
+              </template>
+            </el-input>
+          </el-form-item>
+
+          <el-form-item>
+            <el-button
+              type="primary"
+              size="large"
+              :loading="loading"
+              class="login-button"
+              @click="handleLogin"
+            >
+              {{ loading ? '登录中...' : '登录' }}
+            </el-button>
+          </el-form-item>
+        </el-form>
+      </el-card>
+    </div>
+  </div>
+</template>
+
 <style scoped>
 .login-page {
-  position: relative;
+  width: 100%;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  background: linear-gradient(135deg, #e8f0fe 0%, #f0f2f5 100%);
   padding: 20px;
+  position: relative;
   overflow: hidden;
 }
 
-.login-background {
+/* 背景装饰动画 */
+.login-page::before {
+  content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  z-index: 0;
-}
-
-.background-shapes {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.shape {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.1;
-  animation: float 20s infinite ease-in-out;
-}
-
-.shape-1 {
-  width: 300px;
-  height: 300px;
-  background: #fff;
-  top: -100px;
-  left: -100px;
-  animation-delay: 0s;
-}
-
-.shape-2 {
-  width: 200px;
-  height: 200px;
-  background: #fff;
-  bottom: -50px;
-  right: 10%;
-  animation-delay: 5s;
-}
-
-.shape-3 {
-  width: 150px;
-  height: 150px;
-  background: #fff;
-  top: 50%;
-  right: -50px;
-  animation-delay: 10s;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(26, 115, 232, 0.08) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: float 20s linear infinite;
+  pointer-events: none;
 }
 
 @keyframes float {
-  0%, 100% {
+  0% {
     transform: translate(0, 0) rotate(0deg);
   }
-  33% {
-    transform: translate(30px, -30px) rotate(120deg);
+  100% {
+    transform: translate(50px, 50px) rotate(360deg);
   }
-  66% {
-    transform: translate(-20px, 20px) rotate(240deg);
+}
+
+/* 光晕效果 */
+.login-page::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(26, 115, 232, 0.1) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  animation: pulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1.1);
   }
 }
 
 .login-container {
-  position: relative;
-  z-index: 1;
   width: 100%;
   max-width: 440px;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-card {
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  border: none;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), 0 8px 30px rgba(26, 115, 232, 0.15);
+  background: #ffffff;
+}
+
+.login-card :deep(.el-card__header) {
+  padding: 32px 32px 24px;
+  background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+  border-bottom: none;
 }
 
 .login-card :deep(.el-card__body) {
-  padding: 40px;
+  padding: 32px;
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 32px;
+  color: #ffffff;
 }
 
-.logo-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+.logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+  animation: logoFloat 3s ease-in-out infinite;
 }
 
-.logo-img {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: transform 0.3s ease;
+@keyframes logoFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
-.logo-img:hover {
-  transform: scale(1.05) rotate(5deg);
-}
-
-.logo-title {
-  margin: 0;
-  font-size: 32px;
+.title {
+  font-size: 2rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  margin: 0 0 8px 0;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   letter-spacing: 1px;
 }
 
-.logo-subtitle {
+.subtitle {
+  font-size: 0.95rem;
   margin: 0;
-  font-size: 14px;
-  color: #6b7280;
-  font-weight: 500;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+.intro {
+  text-align: center;
+  margin: 0 0 28px 0;
+  font-size: 0.9rem;
+  color: #606266;
+  line-height: 1.6;
+  padding: 0 8px;
 }
 
 .login-form {
@@ -265,138 +312,84 @@ async function login() {
 }
 
 .login-form :deep(.el-form-item) {
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .login-form :deep(.el-input__wrapper) {
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
   transition: all 0.3s ease;
 }
 
 .login-form :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 0 0 1px #c0c4cc inset;
 }
 
 .login-form :deep(.el-input.is-focus .el-input__wrapper) {
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
-}
-
-.error-alert {
-  margin-bottom: 20px;
-  border-radius: 8px;
+  box-shadow: 0 0 0 1px #1a73e8 inset;
 }
 
 .login-button {
   width: 100%;
-  height: 48px;
-  font-size: 16px;
+  height: 44px;
+  font-size: 1rem;
   font-weight: 600;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
   border: none;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
 }
 
-.login-button:hover {
+.login-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 6px 16px rgba(26, 115, 232, 0.4);
+  background: linear-gradient(135deg, #1557b0 0%, #357ae8 100%);
 }
 
-.login-button:active {
+.login-button:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.login-footer {
-  margin-top: 24px;
-}
-
-.divider-text {
-  font-size: 12px;
-  color: #9ca3af;
-  padding: 0 12px;
-}
-
-.footer-tip {
-  margin: 16px 0 8px;
-  text-align: center;
-  font-size: 13px;
-  color: #6b7280;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.footer-tip strong {
-  color: #667eea;
-  font-weight: 600;
-}
-
-.footer-note {
-  margin: 0;
-  text-align: center;
-  font-size: 12px;
-  color: #9ca3af;
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* 响应式设计 */
-@media (max-width: 768px) {
-  .login-card :deep(.el-card__body) {
-    padding: 32px 24px;
-  }
-
-  .logo-title {
-    font-size: 28px;
-  }
-
-  .logo-img {
-    width: 56px;
-    height: 56px;
-  }
-}
-
 @media (max-width: 480px) {
-  .login-page {
-    padding: 16px;
+  .login-container {
+    max-width: 100%;
+  }
+
+  .login-card :deep(.el-card__header) {
+    padding: 24px 24px 20px;
   }
 
   .login-card :deep(.el-card__body) {
-    padding: 24px 20px;
+    padding: 24px;
   }
 
-  .logo-title {
-    font-size: 24px;
+  .title {
+    font-size: 1.75rem;
   }
 
-  .logo-subtitle {
-    font-size: 12px;
+  .logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 12px;
+  }
+
+  .intro {
+    font-size: 0.85rem;
   }
 }
 
-/* 加载动画 */
-.login-button.is-loading {
-  position: relative;
-}
-
-.login-button.is-loading::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  opacity: 0.8;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.8;
-  }
-  50% {
-    opacity: 1;
+/* 暗色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .intro {
+    color: #909399;
   }
 }
 </style>
-
