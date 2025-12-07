@@ -48,6 +48,35 @@ const bookmarks = ref<Bookmark[]>([]);
 const loading = ref(false);
 const saving = ref(false);
 const error = ref<string | null>(null);
+// [新增]
+const isAutoFetching = ref(false);
+// [新增] 主页的自动填充函数
+async function handleAutoFill() {
+  const urlVal = form.url.trim();
+  if (!urlVal) return;
+  if (saving.value || isAutoFetching.value) return;
+  // 如果标题已有，不自动获取
+  if (form.title) return;
+
+  isAutoFetching.value = true;
+  try {
+    // 调用接口
+    const res = await fetch(`${apiBase}/api/parse?url=${encodeURIComponent(urlVal)}`);
+    const data = await res.json();
+    
+    if (data.success) {
+      if (data.title) form.title = data.title;
+      if (data.description) form.description = data.description;
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    isAutoFetching.value = false;
+  }
+}
+
+
+  
 const search = ref('');
 const editingId = ref<string | null>(null);
 const currentCategory = ref<string>('all');
@@ -942,16 +971,31 @@ function getFaviconUrl(url: string): string {
           <h2>{{ editingId ? '编辑书签' : '新增书签' }}</h2>
           <span>登录后即可管理你的私有书签</span>
         </header>
+        
         <form @submit.prevent="saveBookmark">
           <div class="form-grid">
             <label class="field">
-              <span>标题 *</span>
-              <input v-model="form.title" type="text" placeholder="例如：Vue.js 官方文档" required />
-            </label>
-            <label class="field">
               <span>链接 *</span>
-              <input v-model="form.url" type="url" placeholder="https://example.com" required />
+              <input 
+                v-model="form.url" 
+                type="url" 
+                placeholder="https://example.com" 
+                required 
+                @blur="handleAutoFill"
+              />
             </label>
+
+            <label class="field">
+              <span>标题 *</span>
+              <input 
+                v-model="form.title" 
+                type="text" 
+                :placeholder="isAutoFetching ? '正在自动获取...' : '例如：Vue.js 官方文档'" 
+                :disabled="isAutoFetching"
+                required 
+              />
+            </label>
+
             <label class="field">
               <span>分类</span>
               <input
@@ -964,14 +1008,17 @@ function getFaviconUrl(url: string): string {
                 <option v-for="name in categorySuggestions" :key="name" :value="name" />
               </datalist>
             </label>
+
             <label class="field field--description">
               <span>描述</span>
               <textarea
                 v-model="form.description"
-                placeholder="可填写简介、备注等信息"
+                :placeholder="isAutoFetching ? '正在获取描述...' : '可填写简介、备注等信息'"
+                :disabled="isAutoFetching"
                 rows="3"
               ></textarea>
             </label>
+
             <div class="field field--checkbox">
               <span>是否展示</span>
               <div class="checkbox-row">
@@ -995,7 +1042,8 @@ function getFaviconUrl(url: string): string {
             </button>
           </div>
         </form>
-      </section>
+        </section>
+
 
       <p v-if="error" class="alert alert--error">{{ error }}</p>
       <p v-if="!visibilityFiltered.length && !loading" class="empty">暂无书签，先添加一个吧！</p>
