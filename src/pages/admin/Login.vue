@@ -92,7 +92,7 @@ async function handleLogin() {
       <el-card class="login-card" shadow="hover">
         <template #header>
           <div class="login-header">
-            <img src="/logo.svg" alt="LiteMark Logo" class="logo" />
+            <img src="/" alt="LiteMark Logo" class="logo" />
             <h1 class="title">LiteMark</h1>
             <p class="subtitle">轻量书签管理系统</p>
           </div>
