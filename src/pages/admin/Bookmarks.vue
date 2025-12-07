@@ -163,12 +163,23 @@
       @close="closeEditor"
     >
       <el-form :model="editorForm" label-width="80px">
-        <el-form-item label="标题" required>
-          <el-input v-model="editorForm.title" placeholder="请输入标题" />
-        </el-form-item>
+        
         <el-form-item label="链接" required>
-          <el-input v-model="editorForm.url" placeholder="请输入链接" />
+          <el-input 
+            v-model="editorForm.url" 
+            placeholder="请输入链接" 
+            @blur="handleUrlBlur"
+          />
         </el-form-item>
+
+        <el-form-item label="标题" required>
+          <el-input 
+            v-model="editorForm.title" 
+            :placeholder="isAutoFetching ? '正在自动获取标题...' : '请输入标题'"
+            :disabled="isAutoFetching"
+          />
+        </el-form-item>
+
         <el-form-item label="分类">
           <el-autocomplete
             v-model="editorForm.category"
@@ -177,14 +188,17 @@
             style="width: 100%"
           />
         </el-form-item>
+
         <el-form-item label="描述">
           <el-input
             v-model="editorForm.description"
             type="textarea"
             :rows="3"
-            placeholder="请输入描述"
+            :placeholder="isAutoFetching ? '正在获取描述...' : '请输入描述'"
+            :disabled="isAutoFetching"
           />
         </el-form-item>
+
         <el-form-item label="显示状态">
           <el-switch v-model="editorForm.visible" />
           <span style="margin-left: 8px;">{{ editorForm.visible ? '可见' : '隐藏' }}</span>
@@ -244,6 +258,32 @@ const showEditor = ref(false);
 const editorMode = ref<'create' | 'edit'>('create');
 const editorSaving = ref(false);
 const editorError = ref('');
+// --- [新增代码开始] ---
+const isAutoFetching = ref(false);
+
+async function handleUrlBlur() {
+  const urlVal = editorForm.url.trim();
+  if (!urlVal) return;
+  // 如果正在保存、正在获取，或标题已经有值，就不自动获取了
+  if (editorSaving.value || isAutoFetching.value || editorForm.title) return;
+
+  isAutoFetching.value = true;
+  try {
+    // 注意：这里调用的是刚才创建的接口
+    const res = await fetch(`${apiBase}/api/vercel/parse?url=${encodeURIComponent(urlVal)}`);
+    const data = await res.json();
+    if (data.success) {
+      if (data.title) editorForm.title = data.title;
+      if (data.description) editorForm.description = data.description;
+      ElMessage.success('已自动获取网站信息');
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    isAutoFetching.value = false;
+  }
+}
+// --- [新增代码结束] ---  
 const editorForm = reactive({
   id: '',
   title: '',
