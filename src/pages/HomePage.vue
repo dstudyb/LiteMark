@@ -61,7 +61,7 @@ async function handleAutoFill() {
   isAutoFetching.value = true;
   try {
     // 调用接口
-    const res = await fetch(`${apiBase}/api/parse?url=${encodeURIComponent(urlVal)}`);
+    const res = await fetch(`${apiBase}/api/bookmarks?action=parse&url=${encodeURIComponent(urlVal)}`);
     const data = await res.json();
     
     if (data.success) {
