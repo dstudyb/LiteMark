@@ -270,7 +270,7 @@ async function handleUrlBlur() {
   isAutoFetching.value = true;
   try {
     // 注意：这里调用的是刚才创建的接口
-    const res = await fetch(`${apiBase}/api/vercel/parse?url=${encodeURIComponent(urlVal)}`);
+    const res = await fetch(`${apiBase}/api/vercel/bookmarks?action=parse&url=${encodeURIComponent(urlVal)}`);
     const data = await res.json();
     if (data.success) {
       if (data.title) editorForm.title = data.title;
