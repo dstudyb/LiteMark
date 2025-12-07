@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.678.0",
+    "axios": "^1.7.9",
+    "cheerio": "^1.0.0",
     "@element-plus/icons-vue": "^2.3.2",
     "@types/bcrypt": "^6.0.0",
     "@vercel/blob": "^0.25.0",
