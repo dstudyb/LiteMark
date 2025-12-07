@@ -2161,11 +2161,47 @@ function getFaviconUrl(url: string): string {
 }
 
 @media (max-width: 768px) {
-    /* === 新增代码开始：隐藏拖拽和删除按钮 === */
+  /* === 新增代码开始：隐藏拖拽和删除按钮 === */
+  /* --- 1. 搜索框悬浮逻辑 --- */
+  
+  /* 隐藏桌面端搜索框 */
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* 显示并置顶手机端搜索框 */
+  .mobile-only {
+    display: block;
+    position: sticky;
+    top: 16px;
+    z-index: 100;
+    margin-bottom: 20px;
+  }
+  
+  /* 手机端搜索框美化 */
+  .mobile-search-bar .brand__search {
+    background: var(--surface-glass);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px var(--surface-shadow);
+    border-radius: 999px;
+  }
+
+  /* 取消顶部 Header 的悬浮 (让它随页面滚动消失) */
+  .topbar {
+    position: relative !important;
+    top: auto !important;
+    padding-bottom: 0;
+  }
+  
+  .brand {
+    margin-bottom: 0;
+  }  
+  
   .card__drag-handle,
   .card__action-button {
     display: none !important;
   }
+  
   /* === 新增代码结束 === */
   .topbar {
     padding: 16px 20px;
