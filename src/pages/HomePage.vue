@@ -892,7 +892,7 @@ function getFaviconUrl(url: string): string {
           <img :src="siteIconDisplay" alt="站点图标" />
         </span>
         <h1>{{ siteTitleDisplay }}</h1>
-        <div class="brand__search">
+        <div class="brand__search desktop-only">
           <span class="search-input__icon">🔍</span>
           <input
             v-model="search"
@@ -950,6 +950,18 @@ function getFaviconUrl(url: string): string {
     </header>
 
     <main class="main">
+    <div class="mobile-search-bar mobile-only">
+      <div class="brand__search" style="width: 100%; margin: 0;">
+        <span class="search-input__icon">🔍</span>
+        <input
+          v-model="search"
+          type="search"
+          placeholder="搜索书签..."
+        @keydown.enter.prevent="loadBookmarks"
+        />
+      </div>
+    </div>
+    
       <nav class="category-tabs">
         <button
           v-for="item in categories"
