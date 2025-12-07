@@ -28,7 +28,7 @@ const endpoint = `${apiBase}/api/bookmarks`;
 
 const DEFAULT_TITLE = '个人书签';
 // 默认网站图标使用 public 目录下的 LiteMark.png
-const DEFAULT_ICON = '/LiteMark.png';
+const DEFAULT_ICON = '/logo.svg';
 const DEFAULT_CATEGORY_LABEL = '默认分类';
 const DEFAULT_CATEGORY_KEY = '';
 const DEFAULT_CATEGORY_ALIASES = new Set(
