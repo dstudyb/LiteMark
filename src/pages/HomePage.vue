@@ -2161,18 +2161,17 @@ function getFaviconUrl(url: string): string {
 }
 
 @media (max-width: 768px) {
+    /* === 新增代码开始：隐藏拖拽和删除按钮 === */
+  .card__drag-handle,
+  .card__action-button {
+    display: none !important;
+  }
+  /* === 新增代码结束 === */
   .topbar {
     padding: 16px 20px;
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
-  /* === 新增代码开始：隐藏拖拽和删除按钮 === */
-    .card__drag-handle,
-    .card__action-button {
-    display: none !important;
-  }
-  /* === 新增代码结束 === */
-
   }
 
   .topbar__actions {
