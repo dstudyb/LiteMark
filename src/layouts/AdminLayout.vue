@@ -7,7 +7,7 @@
           <el-icon class="mobile-menu-btn" @click="toggleMobileMenu">
             <Menu />
           </el-icon>
-          <img src="/LiteMark.png" alt="Logo" />
+          <img src="/logo.svg" alt="Logo" />
           <span class="logo-text">LiteMark 后台管理</span>
         </div>
         <div class="header-right">
