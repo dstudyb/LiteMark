@@ -350,7 +350,7 @@ function resolveFaviconHref(icon: string): string | null {
   const value = icon.trim();
   if (!value) {
     // 默认使用 public 根目录下的图标
-    return '/LiteMark.png';
+    return '/logo.svg';
   }
   // 已是完整 URL、data URL 或以 / 开头的路径，直接使用
   if (/^(https?:|data:|\/)/i.test(value)) {
@@ -1135,7 +1135,7 @@ function getFaviconUrl(url: string): string {
         <header class="category-group__header">
           <div class="category-title">
             <span class="category-title__icon">
-              <img src="/LiteMark.png" alt="分类图标" />
+              <img src="/logo.svg" alt="分类图标" />
             </span>
             <span class="category-title__text">
               {{ categoryLabelFromKey(currentCategory) }}
