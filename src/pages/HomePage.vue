@@ -2172,6 +2172,11 @@ function getFaviconUrl(url: string): string {
   opacity: 0.6;
 }
 
+/* 默认（电脑端）隐藏手机专用的元素 */
+.mobile-only {
+  display: none;
+}
+
 @media (max-width: 768px) {
   /* === 新增代码开始：隐藏拖拽和删除按钮 === */
   /* --- 1. 搜索框悬浮逻辑 --- */
