@@ -36,23 +36,7 @@
       </el-col>
     </el-row>
 
-    <el-card class="info-card">
-      <template #header>
-        <h3>相关链接</h3>
-      </template>
-      <ul class="link-list">
-        <li>
-          <el-link href="https://github.com/topqaz/LiteMark" target="_blank" type="primary" :underline="false">
-            GitHub 仓库
-          </el-link>
-        </li>
-        <li>
-          <el-link href="https://github.com/topqaz/LiteMark-extension-browser" target="_blank" type="primary" :underline="false">
-            浏览器插件
-          </el-link>
-        </li>
-      </ul>
-    </el-card>
+
 
   </div>
 </template>
