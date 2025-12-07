@@ -93,7 +93,7 @@ import { onMounted, reactive, ref, watch, onUnmounted } from 'vue';
 import { ElMessage } from 'element-plus';
 
 const DEFAULT_TITLE = '个人书签';
-const DEFAULT_ICON = '/LiteMark.png';
+const DEFAULT_ICON = '/logo.svg';
 
 const themeOptions = [
   { value: 'light', label: '晨光浅色' },
